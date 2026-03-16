@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -22,9 +23,10 @@ import (
 )
 
 const (
-	version      = "1.0.0"
-	sinaStockURL = "http://hq.sinajs.cn/rn=%d&list=%s"
-	txStockURL   = "http://qt.gtimg.cn/?_=%d&q=%s"
+	version       = "1.0.0"
+	sinaStockURL  = "http://hq.sinajs.cn/rn=%d&list=%s"
+	txStockURL    = "http://qt.gtimg.cn/?_=%d&q=%s"
+	sinaKLineURL  = "http://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=%s&scale=%s&ma=5&datalen=%d"
 )
 
 var (
@@ -613,82 +615,93 @@ func fetchStockDetail(code string) (*StockInfo, error) {
 
 // fetchKLineData 从东方财富获取K线数据
 func fetchKLineData(code, period string, count int) ([]KLineData, error) {
-	// 转换股票代码为东方财富格式
-	secid := convertToEastMoneyCode(code)
-	if secid == "" {
-		return nil, fmt.Errorf("无效的股票代码: %s", code)
+	// 转换股票代码为新浪格式 (sh600519 或 sz000001)
+	symbol := strings.ToLower(strings.TrimSpace(code))
+	if !strings.HasPrefix(symbol, "sh") && !strings.HasPrefix(symbol, "sz") {
+		// 自动添加前缀
+		if len(symbol) == 6 {
+			if strings.HasPrefix(symbol, "6") {
+				symbol = "sh" + symbol
+			} else {
+				symbol = "sz" + symbol
+			}
+		} else {
+			return nil, fmt.Errorf("无效的股票代码: %s", code)
+		}
 	}
 
-	// 转换周期参数
+	// 转换周期参数为新浪格式 (5=5分钟, 15=15分钟, 30=30分钟, 60=60分钟, 240=日K, 1680=周K)
 	periodMap := map[string]string{
-		"1m":  "1",
-		"5m":  "5",
-		"15m": "15",
-		"30m": "30",
-		"60m": "60",
-		"day": "101",
-		"week": "102",
-		"month": "103",
+		"1m":   "1",
+		"5m":   "5",
+		"15m":  "15",
+		"30m":  "30",
+		"60m":  "60",
+		"day":  "240",
+		"week": "1680",
+		"month": "7200",
 	}
-	fields := periodMap[period]
-	if fields == "" {
-		fields = "101" // 默认日K
+	scale := periodMap[period]
+	if scale == "" {
+		scale = "240" // 默认日K
 	}
 
-	// 构建API URL
-	url := fmt.Sprintf("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=%s&fqt=0&end=20500101&limit=%d",
-		secid, fields, count)
+	// 构建新浪API URL
+	url := fmt.Sprintf(sinaKLineURL, symbol, scale, count)
+	log.Printf("[DEBUG] K线API URL: %s", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-	req.Header.Set("Referer", "https://quote.eastmoney.com")
+	req.Header.Set("Referer", "https://finance.sina.com.cn")
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
+		log.Printf("[ERROR] K线API请求失败: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Printf("[ERROR] 读取K线响应失败: %v", err)
+		return nil, err
+	}
+	log.Printf("[DEBUG] K线API响应长度: %d", len(body))
+
+	// 新浪API返回的是JSON数组格式
+	// [{"day":"2024-01-01","open":"100","high":"110","low":"95","close":"105","volume":"10000"},...]
+	var sinaKLines []struct {
+		Day    string `json:"day"`
+		Open   string `json:"open"`
+		High   string `json:"high"`
+		Low    string `json:"low"`
+		Close  string `json:"close"`
+		Volume string `json:"volume"`
+	}
+
+	if err := json.Unmarshal(body, &sinaKLines); err != nil {
+		log.Printf("[ERROR] 解析K线JSON失败: %v, 响应: %s", err, string(body)[:200])
 		return nil, err
 	}
 
-	// 解析JSON响应
-	var result struct {
-		Data struct {
-			Klines []string `json:"klines"`
-		} `json:"data"`
-	}
-
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, err
-	}
-
-	if result.Data.Klines == nil || len(result.Data.Klines) == 0 {
+	if len(sinaKLines) == 0 {
 		return nil, fmt.Errorf("未获取到K线数据")
 	}
 
 	// 解析K线数据
 	var klines []KLineData
-	for _, line := range result.Data.Klines {
-		// 格式: 日期,开盘价,收盘价,最低价,最高价,成交量,成交额,振幅,涨跌幅,涨跌额,换手率
-		parts := strings.Split(line, ",")
-		if len(parts) < 6 {
-			continue
-		}
-
-		open, _ := strconv.ParseFloat(parts[1], 64)
-		close, _ := strconv.ParseFloat(parts[2], 64)
-		low, _ := strconv.ParseFloat(parts[3], 64)
-		high, _ := strconv.ParseFloat(parts[4], 64)
-		volume, _ := strconv.ParseInt(parts[5], 10, 64)
+	for _, item := range sinaKLines {
+		open, _ := strconv.ParseFloat(item.Open, 64)
+		high, _ := strconv.ParseFloat(item.High, 64)
+		low, _ := strconv.ParseFloat(item.Low, 64)
+		close, _ := strconv.ParseFloat(item.Close, 64)
+		volume, _ := strconv.ParseInt(item.Volume, 10, 64)
 
 		klines = append(klines, KLineData{
-			Date:   parts[0],
+			Date:   item.Day,
 			Open:   open,
 			High:   high,
 			Low:    low,
@@ -790,7 +803,8 @@ func fetchHotStocks(typeStr string, limit int) ([]StockInfo, error) {
 // searchStocksFromEmbedded 从内置列表搜索股票
 func searchStocksFromEmbedded(keyword string) []StockInfo {
 	// 使用东方财富搜索API获取实时股票数据
-	url := fmt.Sprintf("https://searchapi.eastmoney.com/api/suggest/get?input=%s&type=14&count=20", keyword)
+	encodedKeyword := url.QueryEscape(keyword)
+	url := fmt.Sprintf("https://searchapi.eastmoney.com/api/suggest/get?input=%s&type=14&count=20", encodedKeyword)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
