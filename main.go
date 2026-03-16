@@ -300,8 +300,8 @@ func handleSearchStocks(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 
 // handleGetStockDetail 处理获取股票详细信息
 func handleGetStockDetail(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	code, ok := request.Params.Arguments["code"].(string)
-	if !ok || code == "" {
+	code := getStringArg(request.Params.Arguments, "code")
+	if code == "" {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{mcp.NewTextContent("股票代码不能为空")},
 			IsError: true,
@@ -330,9 +330,9 @@ func handleGetStockDetail(ctx context.Context, request mcp.CallToolRequest) (*mc
 // handleGetKLineData 处理获取K线数据
 func handleGetKLineData(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// 支持 code 和 stock_code 两种参数名
-	code, _ := request.Params.Arguments["code"].(string)
+	code := getStringArg(request.Params.Arguments, "code")
 	if code == "" {
-		code, _ = request.Params.Arguments["stock_code"].(string)
+		code = getStringArg(request.Params.Arguments, "stock_code")
 	}
 	period, _ := request.Params.Arguments["period"].(string)
 	count, _ := request.Params.Arguments["count"].(float64)
@@ -372,7 +372,7 @@ func handleGetKLineData(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 
 // handleGetStockNews 处理获取股票新闻
 func handleGetStockNews(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	code, _ := request.Params.Arguments["code"].(string)
+	code := getStringArg(request.Params.Arguments, "code")
 	limit, _ := request.Params.Arguments["limit"].(float64)
 
 	if code == "" {
@@ -432,7 +432,7 @@ func handleGetMarketNews(ctx context.Context, request mcp.CallToolRequest) (*mcp
 
 // handleGetResearchReports 处理获取研报
 func handleGetResearchReports(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	code, _ := request.Params.Arguments["code"].(string)
+	code := getStringArg(request.Params.Arguments, "code")
 	limit, _ := request.Params.Arguments["limit"].(float64)
 
 	if code == "" {
@@ -838,6 +838,25 @@ func searchStocksFromEmbedded(keyword string) []StockInfo {
 	}
 
 	return results
+}
+
+// getStringArg 从参数map中获取字符串，支持string、float64、int等多种类型
+func getStringArg(args map[string]interface{}, key string) string {
+	if val, ok := args[key]; ok {
+		switch v := val.(type) {
+		case string:
+			return v
+		case float64:
+			return strconv.FormatInt(int64(v), 10)
+		case int:
+			return strconv.Itoa(v)
+		case int64:
+			return strconv.FormatInt(v, 10)
+		default:
+			return fmt.Sprintf("%v", v)
+		}
+	}
+	return ""
 }
 
 // getEnv 获取环境变量，带默认值
