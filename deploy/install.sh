@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # 配置
 APP_NAME="go-stock-mcp"
 APP_DIR="/opt/go-stock-mcp"
-GITHUB_REPO="kore-01/go-stock-mcp"
+GITHUB_REPO="kore-01/go-stock"
 GO_VERSION="1.24.0"
 PORT="${PORT:-8080}"
 

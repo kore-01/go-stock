@@ -28,7 +28,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/kore-01/go-stock-mcp.git
+git clone https://github.com/kore-01/go-stock.git
 cd go-stock-mcp
 
 # 编译

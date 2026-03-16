@@ -142,7 +142,7 @@ update_code() {
             git pull
         else
             rm -rf *
-            git clone https://github.com/kore-01/go-stock-mcp.git /tmp/go-stock-mcp
+            git clone https://github.com/kore-01/go-stock.git /tmp/go-stock-mcp
             cp -r /tmp/go-stock-mcp/* .
             rm -rf /tmp/go-stock-mcp
         fi

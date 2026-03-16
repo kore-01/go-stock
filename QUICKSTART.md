@@ -64,7 +64,7 @@ git add .
 git commit -m "Initial commit: Go-Stock MCP Server v1.0.0"
 
 # 添加远程仓库（替换为你的用户名）
-git remote add origin https://github.com/kore-01/go-stock-mcp.git
+git remote add origin https://github.com/kore-01/go-stock.git
 
 # 推送
 git push -u origin main
@@ -72,7 +72,7 @@ git push -u origin main
 
 ### 步骤 3: 验证推送
 
-访问 `https://github.com/kore-01/go-stock-mcp` 确认代码已推送。
+访问 `https://github.com/kore-01/go-stock` 确认代码已推送。
 
 ---
 
@@ -103,7 +103,7 @@ SSH 连接到服务器并执行：
 ssh root@gz
 
 # 运行一键安装脚本
-curl -fsSL https://raw.githubusercontent.com/kore-01/go-stock-mcp/main/deploy/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kore-01/go-stock/main/deploy/install.sh | bash
 ```
 
 或者手动步骤：
@@ -118,7 +118,7 @@ tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 
 # 克隆仓库
-git clone https://github.com/kore-01/go-stock-mcp.git /opt/go-stock-mcp
+git clone https://github.com/kore-01/go-stock.git /opt/go-stock-mcp
 cd /opt/go-stock-mcp
 
 # 编译
@@ -165,7 +165,7 @@ docker run -d \
   --name go-stock-mcp \
   --restart unless-stopped \
   -p 8080:8080 \
-  ghcr.io/kore-01/go-stock-mcp:latest
+  ghcr.io/kore-01/go-stock:latest
 ```
 
 ---
@@ -446,7 +446,7 @@ ufw allow from YOUR_IP to any port 8080
 
 ## 获取帮助
 
-- GitHub Issues: https://github.com/kore-01/go-stock-mcp/issues
+- GitHub Issues: https://github.com/kore-01/go-stock/issues
 - 部署文档: [DEPLOY.md](./DEPLOY.md)
 
 ---

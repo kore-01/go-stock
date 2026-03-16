@@ -30,10 +30,10 @@
 
 ```bash
 # 下载并运行安装脚本
-curl -fsSL https://raw.githubusercontent.com/kore-01/go-stock-mcp/main/deploy/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kore-01/go-stock/main/deploy/install.sh | bash
 
 # 或使用 wget
-wget -qO- https://raw.githubusercontent.com/kore-01/go-stock-mcp/main/deploy/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/kore-01/go-stock/main/deploy/install.sh | bash
 ```
 
 安装完成后，服务会自动启动，并配置为开机自启。
@@ -58,7 +58,7 @@ wget -qO- https://raw.githubusercontent.com/kore-01/go-stock-mcp/main/deploy/ins
 ssh root@your-server
 
 # 拉取镜像
-docker pull ghcr.io/kore-01/go-stock-mcp:latest
+docker pull ghcr.io/kore-01/go-stock:latest
 
 # 运行容器
 docker run -d \
@@ -67,7 +67,7 @@ docker run -d \
   -p 8080:8080 \
   -e MCP_MODE=sse \
   -e PORT=8080 \
-  ghcr.io/kore-01/go-stock-mcp:latest
+  ghcr.io/kore-01/go-stock:latest
 ```
 
 #### 步骤 3: 配置防火墙
@@ -93,7 +93,7 @@ source /etc/profile
 
 ```bash
 cd /www
-git clone https://github.com/kore-01/go-stock-mcp.git
+git clone https://github.com/kore-01/go-stock.git
 cd go-stock-mcp
 go build -ldflags="-s -w" -o go-stock-mcp main.go sse_server.go
 ```
@@ -170,7 +170,7 @@ version: '3.8'
 
 services:
   go-stock-mcp:
-    image: ghcr.io/kore-01/go-stock-mcp:latest
+    image: ghcr.io/kore-01/go-stock:latest
     container_name: go-stock-mcp
     restart: unless-stopped
     ports:
@@ -197,7 +197,7 @@ docker-compose up -d
 
 ```bash
 # 拉取镜像
-docker pull ghcr.io/kore-01/go-stock-mcp:latest
+docker pull ghcr.io/kore-01/go-stock:latest
 
 # 运行
 docker run -d \
@@ -206,7 +206,7 @@ docker run -d \
   -p 8080:8080 \
   -e MCP_MODE=sse \
   -e PORT=8080 \
-  ghcr.io/kore-01/go-stock-mcp:latest
+  ghcr.io/kore-01/go-stock:latest
 
 # 查看日志
 docker logs -f go-stock-mcp
@@ -249,7 +249,7 @@ go version
 
 ```bash
 cd /opt
-git clone https://github.com/kore-01/go-stock-mcp.git
+git clone https://github.com/kore-01/go-stock.git
 cd go-stock-mcp
 ```
 
@@ -456,7 +456,7 @@ curl http://10.1.20.3:28080/health
 
 ```bash
 # 重新运行安装脚本
-curl -fsSL https://raw.githubusercontent.com/kore-01/go-stock-mcp/main/deploy/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kore-01/go-stock/main/deploy/install.sh | bash
 ```
 
 ### 手动更新
@@ -479,7 +479,7 @@ systemctl restart go-stock-mcp
 
 ```bash
 # 拉取最新镜像
-docker pull ghcr.io/kore-01/go-stock-mcp:latest
+docker pull ghcr.io/kore-01/go-stock:latest
 
 # 停止并删除旧容器
 docker stop go-stock-mcp
@@ -490,7 +490,7 @@ docker run -d \
   --name go-stock-mcp \
   --restart unless-stopped \
   -p 8080:8080 \
-  ghcr.io/kore-01/go-stock-mcp:latest
+  ghcr.io/kore-01/go-stock:latest
 ```
 
 ---
@@ -507,5 +507,5 @@ docker run -d \
 
 ## 获取帮助
 
-- GitHub Issues: https://github.com/kore-01/go-stock-mcp/issues
-- 文档: https://github.com/kore-01/go-stock-mcp/blob/main/README.md
+- GitHub Issues: https://github.com/kore-01/go-stock/issues
+- 文档: https://github.com/kore-01/go-stock/blob/main/README.md
