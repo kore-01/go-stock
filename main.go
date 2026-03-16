@@ -272,7 +272,7 @@ func handleGetStockRealtime(ctx context.Context, request mcp.CallToolRequest) (*
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleSearchStocks 处理搜索股票
@@ -295,7 +295,7 @@ func handleSearchStocks(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleGetStockDetail 处理获取股票详细信息
@@ -324,7 +324,7 @@ func handleGetStockDetail(ctx context.Context, request mcp.CallToolRequest) (*mc
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleGetKLineData 处理获取K线数据
@@ -362,7 +362,7 @@ func handleGetKLineData(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleGetStockNews 处理获取股票新闻
@@ -396,7 +396,7 @@ func handleGetStockNews(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleGetMarketNews 处理获取市场新闻
@@ -422,7 +422,7 @@ func handleGetMarketNews(ctx context.Context, request mcp.CallToolRequest) (*mcp
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleGetResearchReports 处理获取研报
@@ -456,7 +456,7 @@ func handleGetResearchReports(ctx context.Context, request mcp.CallToolRequest) 
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleGetMarketIndices 处理获取大盘指数
@@ -477,7 +477,7 @@ func handleGetMarketIndices(ctx context.Context, request mcp.CallToolRequest) (*
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // handleGetHotStocks 处理获取热门股票
@@ -508,7 +508,7 @@ func handleGetHotStocks(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		}, nil
 	}
 
-	return mcp.NewToolResultText(string(data)), nil
+	return newToolResultText(string(data)), nil
 }
 
 // ========== Data Fetch Functions ==========
@@ -835,5 +835,17 @@ func getEnvMap() map[string]string {
 		"MCP_MODE":  os.Getenv("MCP_MODE"),
 		"BASE_URL":  os.Getenv("BASE_URL"),
 		"LOG_LEVEL": os.Getenv("LOG_LEVEL"),
+	}
+}
+
+// newToolResultText 创建正确的 MCP 文本结果
+func newToolResultText(text string) *mcp.CallToolResult {
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{
+			mcp.TextContent{
+				Type: "text",
+				Text: text,
+			},
+		},
 	}
 }
