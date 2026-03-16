@@ -1,0 +1,20 @@
+[Unit]
+Description=Go-Stock MCP Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/go-stock-mcp
+ExecStart=/opt/go-stock-mcp/go-stock-mcp -mode=sse
+Restart=always
+RestartSec=5
+
+# 环境变量配置
+Environment="MCP_MODE=sse"
+Environment="PORT=28080"
+Environment="BASE_URL=http://193.112.101.212:28080"
+Environment="LOG_LEVEL=info"
+
+[Install]
+WantedBy=multi-user.target

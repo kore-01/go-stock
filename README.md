@@ -70,8 +70,14 @@ curl -fsSL https://raw.githubusercontent.com/kore-01/go-stock-mcp/main/deploy/in
 |------|------|--------|
 | `MCP_MODE` | 运行模式：stdio 或 sse | `stdio` |
 | `PORT` | SSE 模式监听端口 | `8080` |
-| `BASE_URL` | SSE 服务基础 URL | `http://localhost:8080` |
+| `BASE_URL` | SSE 服务基础 URL（⚠️ 服务器部署必须设置为公网地址） | `http://localhost:8080` |
 | `LOG_LEVEL` | 日志级别 | `info` |
+
+**⚠️ 重要**：服务器部署时，必须设置 `BASE_URL` 为公网可访问的地址，例如：
+```bash
+export BASE_URL=http://193.112.101.212:28080
+```
+否则 MCP 客户端会因 origin 不匹配而无法连接。
 
 ### MCP 客户端配置
 
