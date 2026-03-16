@@ -1,0 +1,47 @@
+# Binaries
+go-stock-mcp
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build directories
+build/
+dist/
+
+# Log files
+*.log
+nohup.out
+
+# Temporary files
+tmp/
+temp/
+*.tmp
