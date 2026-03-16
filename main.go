@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -727,6 +728,10 @@ func getEnv(key, defaultValue string) string {
 }
 
 func getEnvMap() map[string]string {
-	// 简化实现
-	return map[string]string{}
+	return map[string]string{
+		"PORT":      os.Getenv("PORT"),
+		"MCP_MODE":  os.Getenv("MCP_MODE"),
+		"BASE_URL":  os.Getenv("BASE_URL"),
+		"LOG_LEVEL": os.Getenv("LOG_LEVEL"),
+	}
 }
