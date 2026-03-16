@@ -41,6 +41,8 @@ func runSSEServer() {
 	// 创建 SSE 服务器
 	sseServer := server.NewSSEServer(s,
 		server.WithBaseURL(baseURL),
+		server.WithSSEEndpoint("/sse"),
+		server.WithMessageEndpoint("/message"),
 	)
 
 	// 设置路由
