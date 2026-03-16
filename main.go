@@ -606,21 +606,123 @@ func fetchStockDetail(code string) (*StockInfo, error) {
 	return &stocks[0], nil
 }
 
-// fetchKLineData 获取K线数据（简化实现）
+// fetchKLineData 从东方财富获取K线数据
 func fetchKLineData(code, period string, count int) ([]KLineData, error) {
-	// 这里简化实现，实际应该从东方财富或腾讯接口获取
-	// 返回模拟数据作为示例
-	klines := []KLineData{
-		{
-			Date:   time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
-			Open:   100.0,
-			High:   105.0,
-			Low:    99.0,
-			Close:  103.0,
-			Volume: 1000000,
-		},
+	// 转换股票代码为东方财富格式
+	secid := convertToEastMoneyCode(code)
+	if secid == "" {
+		return nil, fmt.Errorf("无效的股票代码: %s", code)
 	}
+
+	// 转换周期参数
+	periodMap := map[string]string{
+		"1m":  "1",
+		"5m":  "5",
+		"15m": "15",
+		"30m": "30",
+		"60m": "60",
+		"day": "101",
+		"week": "102",
+		"month": "103",
+	}
+	fields := periodMap[period]
+	if fields == "" {
+		fields = "101" // 默认日K
+	}
+
+	// 构建API URL
+	url := fmt.Sprintf("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=%s&fqt=0&end=20500101&limit=%d",
+		secid, fields, count)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+	req.Header.Set("Referer", "https://quote.eastmoney.com")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析JSON响应
+	var result struct {
+		Data struct {
+			Klines []string `json:"klines"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+
+	if result.Data.Klines == nil || len(result.Data.Klines) == 0 {
+		return nil, fmt.Errorf("未获取到K线数据")
+	}
+
+	// 解析K线数据
+	var klines []KLineData
+	for _, line := range result.Data.Klines {
+		// 格式: 日期,开盘价,收盘价,最低价,最高价,成交量,成交额,振幅,涨跌幅,涨跌额,换手率
+		parts := strings.Split(line, ",")
+		if len(parts) < 6 {
+			continue
+		}
+
+		open, _ := strconv.ParseFloat(parts[1], 64)
+		close, _ := strconv.ParseFloat(parts[2], 64)
+		low, _ := strconv.ParseFloat(parts[3], 64)
+		high, _ := strconv.ParseFloat(parts[4], 64)
+		volume, _ := strconv.ParseInt(parts[5], 10, 64)
+
+		klines = append(klines, KLineData{
+			Date:   parts[0],
+			Open:   open,
+			High:   high,
+			Low:    low,
+			Close:  close,
+			Volume: volume,
+		})
+	}
+
 	return klines, nil
+}
+
+// convertToEastMoneyCode 转换为东方财富代码格式
+func convertToEastMoneyCode(code string) string {
+	code = strings.ToLower(strings.TrimSpace(code))
+
+	// 移除可能的前缀点
+	code = strings.TrimPrefix(code, ".")
+
+	if strings.HasPrefix(code, "sh") {
+		// 上海股票
+		return "1." + strings.TrimPrefix(code, "sh")
+	} else if strings.HasPrefix(code, "sz") {
+		// 深圳股票
+		return "0." + strings.TrimPrefix(code, "sz")
+	} else if strings.HasPrefix(code, "bj") {
+		// 北交所
+		return "0." + strings.TrimPrefix(code, "bj")
+	}
+
+	// 纯数字代码，根据前缀判断
+	if len(code) == 6 {
+		if strings.HasPrefix(code, "6") || strings.HasPrefix(code, "5") {
+			return "1." + code // 上海
+		} else {
+			return "0." + code // 深圳/北交
+		}
+	}
+
+	return ""
 }
 
 // fetchStockNews 获取股票新闻
