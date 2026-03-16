@@ -329,13 +329,17 @@ func handleGetStockDetail(ctx context.Context, request mcp.CallToolRequest) (*mc
 
 // handleGetKLineData 处理获取K线数据
 func handleGetKLineData(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// 支持 code 和 stock_code 两种参数名
 	code, _ := request.Params.Arguments["code"].(string)
+	if code == "" {
+		code, _ = request.Params.Arguments["stock_code"].(string)
+	}
 	period, _ := request.Params.Arguments["period"].(string)
 	count, _ := request.Params.Arguments["count"].(float64)
 
 	if code == "" {
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{mcp.NewTextContent("股票代码不能为空")},
+			Content: []mcp.Content{mcp.NewTextContent("股票代码不能为空 (请使用 code 或 stock_code 参数)")},
 			IsError: true,
 		}, nil
 	}
@@ -785,38 +789,52 @@ func fetchHotStocks(typeStr string, limit int) ([]StockInfo, error) {
 
 // searchStocksFromEmbedded 从内置列表搜索股票
 func searchStocksFromEmbedded(keyword string) []StockInfo {
-	var results []StockInfo
-	keyword = strings.ToLower(keyword)
+	// 使用东方财富搜索API获取实时股票数据
+	url := fmt.Sprintf("https://searchapi.eastmoney.com/api/suggest/get?input=%s&type=14&count=20", keyword)
 
-	// 预定义的常见股票数据
-	stockList := []struct {
-		Code   string
-		Name   string
-		Pinyin string
-	}{
-		{"sh600519", "贵州茅台", "maotai"},
-		{"sz000001", "平安银行", "pinganyinhang"},
-		{"sh600036", "招商银行", "zhaoshangyinhang"},
-		{"sz000002", "万科A", "wanke"},
-		{"sh600276", "恒瑞医药", "hengruiyiyao"},
-		{"sh600030", "中信证券", "zhongxinzhengquan"},
-		{"sz000858", "五粮液", "wuliangye"},
-		{"sh601318", "中国平安", "zhongguopingan"},
-		{"sz002594", "比亚迪", "biyadi"},
-		{"sh600887", "伊利股份", "yiligufen"},
-		{"sz300750", "宁德时代", "ningdeshidai"},
-		{"sh688981", "中芯国际", "zhongxinguoji"},
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return []StockInfo{}
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return []StockInfo{}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return []StockInfo{}
 	}
 
-	for _, s := range stockList {
-		if strings.Contains(strings.ToLower(s.Code), keyword) ||
-			strings.Contains(strings.ToLower(s.Name), keyword) ||
-			strings.Contains(s.Pinyin, keyword) {
-			results = append(results, StockInfo{
-				Code: s.Code,
-				Name: s.Name,
-			})
+	// 解析JSON响应
+	var result struct {
+		QuotationCodeTable struct {
+			Data []struct {
+				Code   string `json:"Code"`
+				Name   string `json:"Name"`
+				Market string `json:"MarketType"`
+			} `json:"Data"`
+		} `json:"QuotationCodeTable"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return []StockInfo{}
+	}
+
+	var results []StockInfo
+	for _, item := range result.QuotationCodeTable.Data {
+		// 根据市场类型添加前缀
+		prefix := "sh"
+		if item.Market == "2" {
+			prefix = "sz"
 		}
+		results = append(results, StockInfo{
+			Code: prefix + item.Code,
+			Name: item.Name,
+		})
 	}
 
 	return results
